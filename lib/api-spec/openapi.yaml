@@ -1,0 +1,792 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: Website Rental Marketplace API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: products
+    description: Website products for rent
+  - name: categories
+    description: Product categories
+  - name: clients
+    description: Client website subscriptions
+  - name: admin
+    description: Admin authentication
+  - name: stats
+    description: Dashboard statistics
+  - name: settings
+    description: Site settings
+  - name: Storage
+    description: Object storage upload and serving endpoints.
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  # ─── Products ──────────────────────────────────────────────────────────────
+  /products:
+    get:
+      operationId: listProducts
+      tags: [products]
+      summary: List all products
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: category
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: List of products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+    post:
+      operationId: createProduct
+      tags: [products]
+      summary: Create a product (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+      responses:
+        "201":
+          description: Created product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+
+  /products/{id}:
+    get:
+      operationId: getProduct
+      tags: [products]
+      summary: Get a single product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateProduct
+      tags: [products]
+      summary: Update a product (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductUpdate"
+      responses:
+        "200":
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+    delete:
+      operationId: deleteProduct
+      tags: [products]
+      summary: Delete a product (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── Categories ────────────────────────────────────────────────────────────
+  /categories:
+    get:
+      operationId: listCategories
+      tags: [categories]
+      summary: List all categories
+      responses:
+        "200":
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+    post:
+      operationId: createCategory
+      tags: [categories]
+      summary: Create a category (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryInput"
+      responses:
+        "201":
+          description: Created category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+
+  /categories/{id}:
+    patch:
+      operationId: updateCategory
+      tags: [categories]
+      summary: Update a category (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryUpdate"
+      responses:
+        "200":
+          description: Updated category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+    delete:
+      operationId: deleteCategory
+      tags: [categories]
+      summary: Delete a category (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── Clients ────────────────────────────────────────────────────────────────
+  /clients:
+    get:
+      operationId: listClients
+      tags: [clients]
+      summary: List all client websites
+      responses:
+        "200":
+          description: List of clients
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClientWebsite"
+    post:
+      operationId: createClient
+      tags: [clients]
+      summary: Create a client website (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientWebsiteInput"
+      responses:
+        "201":
+          description: Created client
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientWebsite"
+
+  /clients/lookup/{websiteId}:
+    get:
+      operationId: lookupClientByWebsiteId
+      tags: [clients]
+      summary: Look up a client website by its public website ID
+      parameters:
+        - name: websiteId
+          in: path
+          required: true
+          schema: { type: string, pattern: "^[0-9]+$" }
+      responses:
+        "200":
+          description: Client website
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientWebsite"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /clients/{id}:
+    get:
+      operationId: getClient
+      tags: [clients]
+      summary: Get a single client website
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Client website
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientWebsite"
+    patch:
+      operationId: updateClient
+      tags: [clients]
+      summary: Update a client website (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientWebsiteUpdate"
+      responses:
+        "200":
+          description: Updated client
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientWebsite"
+    delete:
+      operationId: deleteClient
+      tags: [clients]
+      summary: Delete a client website (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+
+  /clients/{id}/extend:
+    post:
+      operationId: extendClient
+      tags: [clients]
+      summary: Extend client subscription by 30 days
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Extended client
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientWebsite"
+
+  /clients/{id}/toggle-status:
+    post:
+      operationId: toggleClientStatus
+      tags: [clients]
+      summary: Activate or deactivate a client website
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Toggled client
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientWebsite"
+
+  # ─── Admin Auth ─────────────────────────────────────────────────────────────
+  /admin/login:
+    post:
+      operationId: adminLogin
+      tags: [admin]
+      summary: Admin login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginInput"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminLoginResult"
+        "401":
+          description: Invalid password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/logout:
+    post:
+      operationId: adminLogout
+      tags: [admin]
+      summary: Admin logout
+      responses:
+        "200":
+          description: Logged out
+
+  /admin/me:
+    get:
+      operationId: adminMe
+      tags: [admin]
+      summary: Check admin session
+      responses:
+        "200":
+          description: Admin is logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSession"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ─── Settings ───────────────────────────────────────────────────────────────
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get site settings (public)
+      responses:
+        "200":
+          description: Site settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteSettings"
+    put:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update site settings (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SiteSettingsInput"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteSettings"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ─── Stats ──────────────────────────────────────────────────────────────────
+  /stats/dashboard:
+    get:
+      operationId: getDashboardStats
+      tags: [stats]
+      summary: Dashboard summary stats
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
+  /storage/uploads/request-url:
+    post:
+      tags: [Storage]
+      operationId: requestUploadUrl
+      summary: Request a presigned URL for file upload
+      description: |
+        Returns a presigned GCS URL for direct upload. The client sends JSON
+        metadata here, then uploads the file directly to the returned URL.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadUrlRequest'
+      responses:
+        '200':
+          description: Presigned upload URL generated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadUrlResponse'
+        '400':
+          description: Missing or invalid required fields.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: Failed to generate upload URL.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /storage/public-objects/{filePath}:
+    get:
+      tags: [Storage]
+      operationId: getPublicObject
+      summary: Serve a public asset from PUBLIC_OBJECT_SEARCH_PATHS
+      description: |
+        Unconditionally public — no authentication or ACL checks.
+        Searches PUBLIC_OBJECT_SEARCH_PATHS for the given file path.
+      parameters:
+        - name: filePath
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Relative file path within the public search paths.
+      responses:
+        '200':
+          description: Object content streamed with correct Content-Type.
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: File not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: Failed to serve public object.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /storage/objects/{objectPath}:
+    get:
+      tags: [Storage]
+      operationId: getStorageObject
+      summary: Serve an object entity from PRIVATE_OBJECT_DIR
+      description: |
+        Serves object entities uploaded via presigned URLs. These can optionally
+        be protected with authentication or ACL checks based on the use case.
+      parameters:
+        - name: objectPath
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Object path within the private object dir (e.g. `uploads/some-uuid`).
+      responses:
+        '200':
+          description: Object content streamed with correct Content-Type.
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Object not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: Failed to serve object.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+
+components:
+  schemas:
+    UploadUrlRequest:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: Original file name.
+        size:
+          type: integer
+          minimum: 1
+          description: File size in bytes.
+        contentType:
+          type: string
+          minLength: 1
+          description: MIME type of the file (e.g. `image/jpeg`).
+    UploadUrlResponse:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL:
+          type: string
+          format: uri
+          description: Presigned GCS URL for PUT upload.
+        objectPath:
+          type: string
+          description: Normalized object path (e.g. `/objects/uploads/uuid`). Store this in your database.
+        metadata:
+          $ref: '#/components/schemas/UploadUrlRequest'
+    UploadResult:
+      type: object
+      required: [objectPath]
+      properties:
+        objectPath:
+          type: string
+          description: Normalized object path (e.g. `/objects/uploads/uuid`). Store this in your database.
+
+    SiteSettings:
+      type: object
+      required: [heroBadge, heroTitle, heroSubtitle, heroDescription]
+      properties:
+        heroBadge: { type: string }
+        heroTitle: { type: string }
+        heroSubtitle: { type: string }
+        heroDescription: { type: string }
+
+    SiteSettingsInput:
+      type: object
+      properties:
+        heroBadge: { type: string }
+        heroTitle: { type: string }
+        heroSubtitle: { type: string }
+        heroDescription: { type: string }
+
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string }
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+
+    # ─── Product ──────────────────────────────────────────────────────────────
+    Product:
+      type: object
+      required: [id, name, price, description, categoryId, images, features, status, whatsappNumber]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        price: { type: number }
+        discount: { type: ["integer", "null"], minimum: 1, maximum: 100 }
+        description: { type: string }
+        categoryId: { type: ["integer", "null"] }
+        categoryName: { type: ["string", "null"] }
+        images:
+          type: array
+          items: { type: string }
+        features:
+          type: array
+          items: { type: string }
+        status:
+          type: string
+          enum: [active, inactive]
+        whatsappNumber: { type: string }
+        createdAt: { type: string }
+
+    ProductInput:
+      type: object
+      required: [name, price, description, images, features, status, whatsappNumber]
+      properties:
+        name: { type: string, minLength: 1 }
+        price: { type: number, minimum: 0 }
+        discount: { type: ["integer", "null"], minimum: 1, maximum: 100 }
+        description: { type: string, minLength: 1 }
+        categoryId: { type: ["integer", "null"] }
+        images:
+          type: array
+          items: { type: string }
+        features:
+          type: array
+          items: { type: string }
+        status:
+          type: string
+          enum: [active, inactive]
+        whatsappNumber: { type: string }
+
+    ProductUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        price: { type: number, minimum: 0 }
+        discount: { type: ["integer", "null"], minimum: 1, maximum: 100 }
+        description: { type: string }
+        categoryId: { type: ["integer", "null"] }
+        images:
+          type: array
+          items: { type: string }
+        features:
+          type: array
+          items: { type: string }
+        status:
+          type: string
+          enum: [active, inactive]
+        whatsappNumber: { type: string }
+
+    # ─── Category ─────────────────────────────────────────────────────────────
+    Category:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+
+    CategoryInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1 }
+
+    CategoryUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+
+    # ─── Client Website ───────────────────────────────────────────────────────
+    ClientWebsite:
+      type: object
+      required: [id, websiteName, websiteId, url, status, startDate, endDate]
+      properties:
+        id: { type: integer }
+        websiteName: { type: string }
+        websiteId: { type: string }
+        url: { type: string }
+        status:
+          type: string
+          enum: [active, inactive]
+        startDate: { type: string }
+        endDate: { type: string }
+        daysRemaining: { type: ["integer", "null"] }
+
+    ClientWebsiteInput:
+      type: object
+      required: [websiteName, websiteId, url, startDate, endDate]
+      properties:
+        websiteName: { type: string, minLength: 1 }
+        websiteId: { type: string, pattern: "^[0-9]+$" }
+        url: { type: string }
+        status:
+          type: string
+          enum: [active, inactive]
+        startDate: { type: string }
+        endDate: { type: string }
+
+    ClientWebsiteUpdate:
+      type: object
+      properties:
+        websiteName: { type: string }
+        websiteId: { type: string, pattern: "^[0-9]+$" }
+        url: { type: string }
+        status:
+          type: string
+          enum: [active, inactive]
+        startDate: { type: string }
+        endDate: { type: string }
+
+    # ─── Admin ────────────────────────────────────────────────────────────────
+    AdminLoginInput:
+      type: object
+      required: [password]
+      properties:
+        password: { type: string }
+
+    AdminLoginResult:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean }
+
+    AdminSession:
+      type: object
+      required: [authenticated]
+      properties:
+        authenticated: { type: boolean }
+
+    # ─── Stats ────────────────────────────────────────────────────────────────
+    DashboardStats:
+      type: object
+      required: [totalProducts, activeProducts, totalClients, activeClients, expiringClients, totalCategories]
+      properties:
+        totalProducts: { type: integer }
+        activeProducts: { type: integer }
+        totalClients: { type: integer }
+        activeClients: { type: integer }
+        expiringClients: { type: integer }
+        totalCategories: { type: integer }
